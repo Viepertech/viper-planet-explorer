@@ -1,8 +1,15 @@
-def get_upcoming_events():
-   #TODO: change static data to polled data
-    return [
-        {"name": "Perseid Meteor Shower Peak", "date": "2025-08-12"},
-        {"name": "Partial Lunar Eclipse", "date": "2025-09-17"},
-        {"name": "Supermoon", "date": "2025-10-08"},
-        {"name": "Venus–Jupiter Conjunction", "date": "2025-11-02"},
-    ]
+from event_fetcher import get_upcoming_events
+from calendar_exporter import export_to_ics
+
+def main():
+    print("Space Event Calendar Generator")
+    events = get_upcoming_events()
+    
+    print("\nUpcoming Events:")
+    for e in events:
+        print(f"{e['date']}: {e['name']}")
+
+    export_to_ics(events)
+
+if __name__ == "__main__":
+    main()
