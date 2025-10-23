@@ -1,1 +1,54 @@
-# Viper Planet Explorer
+# ☄️ Near-Earth Asteroid 3D Tracker
+
+> 🌐 **Live Visualization:**  
+> [View the Interactive Demo](https://viepertech.github.io/viper-planet-explorer//)
+
+---
+
+## 🛰️ Overview
+
+This project visualizes **Near-Earth Objects (NEOs)** using live data from NASA’s [NeoWs (Near Earth Object Web Service)](https://api.nasa.gov/).  
+It generates a **3D interactive scene** showing asteroid flybys near Earth, highlighting which are potentially hazardous.
+
+Each asteroid is plotted in **Astronomical Units (AU)**, scaled in size, and color-coded by hazard level:
+
+- 🟦 **Blue:** Non-hazardous asteroids  
+- 🟥 **Red:** Potentially hazardous asteroids  
+- 🌍 **Green–Blue Earth:** Scaled-up solid Earth sphere at the origin  
+
+---
+
+## 🌍 How It Works
+
+1. **`api_client.py`** — Fetches asteroid data from NASA’s API.
+2. **`data_processing.py`** — Processes and scales asteroid positions for 3D plotting.
+3. **`visualization.py`** — Builds a high-quality **solid Earth** model and plots all asteroids.
+4. **`main.py`** — Orchestrates the whole pipeline and saves a standalone `index.html`.
+5. **GitHub Actions (`.github/workflows/pages.yml`)** — Automatically:
+   - Installs dependencies  
+   - Runs the script to fetch new data  
+   - Publishes `site/index.html` to **GitHub Pages**
+
+---
+
+## 🧩 Features
+
+✅ **Solid, opaque Earth** with realistic gradient  
+✅ **Spinning 3D camera** for cinematic visualization  
+✅ **NASA live data refresh** on every workflow run  
+✅ **Standalone HTML** (no backend needed)  
+✅ **Fully automated GitHub Pages deployment**
+
+---
+
+## 🧠 Technical Details
+
+- **Data Source:** [NASA NeoWs API](https://api.nasa.gov/)  
+- **Visualization:** Plotly 3D (`plotly.graph_objects`)  
+- **Languages:** Python 3.11+, NumPy, Plotly  
+- **Deployed With:** GitHub Actions → GitHub Pages  
+
+### Code Entry Point
+```bash
+cd src
+python -m asteroid_tracker.main
