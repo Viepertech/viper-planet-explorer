@@ -20,7 +20,7 @@ jobs:
     env:
       NASA_API_KEY: ${{ secrets.NASA_API_KEY }}
     steps:
-      - name: Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -33,12 +33,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Build Plotly site
+      - name: Build asteroid visualization
         run: |
-          python main.py
-          test -f site/index.html
+          cd src
+          python -m asteroid_tracker.main
+          test -f asteroid_tracker/site/index.html
+          mv asteroid_tracker/site ../site
 
-      - name: Upload artifact
+      - name: Upload artifact for Pages
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
