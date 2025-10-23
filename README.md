@@ -19,6 +19,7 @@ Each asteroid is plotted in **Astronomical Units (AU)**, scaled in size, and col
 ---
 ## File Structure 
 
+```
 viper-planet-explorer/
 ├── requirements.txt
 ├── .github/
@@ -31,6 +32,7 @@ viper-planet-explorer/
         ├── data_processing.py # Turns raw data into coordinates
         ├── visualization.py   # Draws Earth, asteroids, and rotation
         └── main.py            # Runs everything and saves index.html
+```
 
 ## 🌍 How It Works
 
