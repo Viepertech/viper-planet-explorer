@@ -1,7 +1,7 @@
 # api_client.py
 import requests
 from typing import Optional, Dict
-from config import NASA_API_KEY, NEOWS_FEED_URL
+from .config import NASA_API_KEY, NEOWS_FEED_URL
 
 def get_neo_feed_data(start_date: str, end_date: str) -> Optional[Dict]:
     params = {
