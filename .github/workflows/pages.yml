@@ -18,27 +18,89 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      NASA_API_KEY: ${{ secrets.NASA_API_KEY }}
+      NASA_API_KEY: ${{ secrets.NASA_API_KEY }}  # set this in repo Settings > Secrets > Actions
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      - name: Show repo tree (debug)
+        shell: bash
+        run: |
+          echo "WORKSPACE: $GITHUB_WORKSPACE"
+          pwd
+          ls -la
+          echo "---- one level down ----"
+          ls -la */ || true
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Install dependencies (auto-locate requirements.txt)
+        shell: bash
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          REQ=""
+          for CAND in \
+            requirements.txt \
+            ./requirements.txt \
+            src/requirements.txt \
+            src/asteroid_tracker/requirements.txt \
+            neo-pages/requirements.txt \
+            */requirements.txt; do
+            if [ -f "$CAND" ]; then
+              REQ="$CAND"; break
+            fi
+          done
+          if [ -z "$REQ" ]; then
+            echo "::error ::Could not find requirements.txt at repo root or common paths."
+            exit 1
+          fi
+          echo "Using $REQ"
+          pip install -r "$REQ"
 
       - name: Build asteroid visualization
+        shell: bash
         run: |
-          cd src
-          python -m asteroid_tracker.main
-          test -f asteroid_tracker/site/index.html
-          mv asteroid_tracker/site ../site
+          set -e
+          # Try running as a package from src (preferred structure)
+          if [ -d "src" ]; then
+            (cd src && python -m asteroid_tracker.main) || true
+          fi
+
+          # Fallbacks if your entry point is elsewhere
+          if [ ! -f "src/asteroid_tracker/site/index.html" ]; then
+            python main.py || true
+            python src/asteroid_tracker/main.py || true
+          fi
+
+          # Collect the produced index.html into repo-root site/
+          mkdir -p site
+          FOUND=""
+          for C in \
+            src/asteroid_tracker/site/index.html \
+            src/site/index.html \
+            site/index.html \
+            src/asteroid_tracker/index.html \
+            src/index.html \
+            index.html; do
+            if [ -f "$C" ]; then
+              echo "Found page at: $C"
+              cp "$C" site/index.html
+              FOUND="yes"
+              break
+            fi
+          done
+
+          if [ -z "$FOUND" ]; then
+            echo "::error ::index.html was not produced. Ensure your code writes to asteroid_tracker/site/index.html (or any of the checked locations)."
+            exit 1
+          fi
+
+          # Show what will be deployed
+          echo "---- site/ contents ----"
+          ls -la site
 
       - name: Upload artifact for Pages
         uses: actions/upload-pages-artifact@v3
