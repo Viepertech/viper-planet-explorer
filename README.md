@@ -17,6 +17,20 @@ Each asteroid is plotted in **Astronomical Units (AU)**, scaled in size, and col
 - 🌍 **Green–Blue Earth:** Scaled-up solid Earth sphere at the origin  
 
 ---
+## File Structure 
+
+viper-planet-explorer/
+├── requirements.txt
+├── .github/
+│   └── workflows/
+│       └── pages.yml          # Deploys to GitHub Pages
+└── src/
+    └── asteroid_tracker/
+        ├── api_client.py      # Fetches asteroid data from NASA
+        ├── config.py          # Holds API key and base URL
+        ├── data_processing.py # Turns raw data into coordinates
+        ├── visualization.py   # Draws Earth, asteroids, and rotation
+        └── main.py            # Runs everything and saves index.html
 
 ## 🌍 How It Works
 
