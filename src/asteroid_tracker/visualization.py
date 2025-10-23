@@ -1,39 +1,65 @@
 # visualization.py
-import plotly.graph_objects as go
-import numpy as np
+import os
 from typing import List, Dict
+
+import numpy as np
+import plotly.graph_objects as go
 
 EARTH_RADIUS_KM = 6371
 KM_PER_AU = 149597870.7
 EARTH_RADIUS_AU = EARTH_RADIUS_KM / KM_PER_AU
 
-def create_3d_asteroid_plot(asteroids_data: List[Dict], title: str) -> go.Figure:
+
+def create_3d_asteroid_plot(
+    asteroids_data: List[Dict],
+    title: str,
+    *,
+    earth_scale: float = 50.0,  
+    show_earth_label: bool = True
+) -> go.Figure:
+
     if not asteroids_data:
         fig = go.Figure()
         fig.update_layout(title="No Asteroid Data Available",
-                          paper_bgcolor="black", font=dict(color="white"))
+                          paper_bgcolor="black",
+                          font=dict(color="white"))
         return fig
 
     fig = go.Figure()
+    u = np.linspace(0, 2 * np.pi, 100)
+    v = np.linspace(0, np.pi, 100)
 
-    # Earth sphere
-    u = np.linspace(0, 2 * np.pi, 64)
-    v = np.linspace(0, np.pi, 64)
-    ex = EARTH_RADIUS_AU * np.outer(np.cos(u), np.sin(v))
-    ey = EARTH_RADIUS_AU * np.outer(np.sin(u), np.sin(v))
-    ez = EARTH_RADIUS_AU * np.outer(np.ones(u.size), np.cos(v))
+    r_vis = EARTH_RADIUS_AU * earth_scale
+    ex = r_vis * np.outer(np.cos(u), np.sin(v))
+    ey = r_vis * np.outer(np.sin(u), np.sin(v))
+    ez = r_vis * np.outer(np.ones(u.size), np.cos(v))
 
     fig.add_trace(go.Surface(
         x=ex, y=ey, z=ez,
-        colorscale=[[0, 'rgb(20,70,200)'], [1, 'rgb(0,20,80)']],
-        showscale=False, opacity=0.9, name='Earth', hoverinfo='name'
+        colorscale=[[0, 'royalblue'], [1, 'blue']],
+        showscale=False,
+        opacity=0.95,
+        name='Earth',
+        hoverinfo='name'
     ))
+
+    if show_earth_label:
+        fig.add_trace(go.Scatter3d(
+            x=[0], y=[0], z=[0],
+            mode='markers+text',
+            marker=dict(size=10, color='white'),
+            text=["🌍 Earth"],
+            textposition="top center",
+            name="Earth center",
+            hoverinfo="skip"
+        ))
 
     hazard = [a for a in asteroids_data if a.get('is_hazardous')]
     safe   = [a for a in asteroids_data if not a.get('is_hazardous')]
 
     def px(size_km: float) -> float:
-        return max(3.0, size_km * 50.0)
+
+        return max(3.0, float(size_km) * 50.0)
 
     if safe:
         fig.add_trace(go.Scatter3d(
@@ -41,8 +67,12 @@ def create_3d_asteroid_plot(asteroids_data: List[Dict], title: str) -> go.Figure
             y=[a['y'] for a in safe],
             z=[a['z'] for a in safe],
             mode='markers',
-            marker=dict(size=[px(a['size']) for a in safe],
-                        color='deepskyblue', opacity=0.7, line=dict(width=0)),
+            marker=dict(
+                size=[px(a['size']) for a in safe],
+                color='deepskyblue',
+                opacity=0.75,
+                line=dict(width=0)
+            ),
             text=[a['text'] for a in safe],
             hoverinfo='text',
             name='Asteroids (non-hazardous)'
@@ -54,8 +84,12 @@ def create_3d_asteroid_plot(asteroids_data: List[Dict], title: str) -> go.Figure
             y=[a['y'] for a in hazard],
             z=[a['z'] for a in hazard],
             mode='markers',
-            marker=dict(size=[px(a['size']) for a in hazard],
-                        color='crimson', opacity=0.9, line=dict(width=0)),
+            marker=dict(
+                size=[px(a['size']) for a in hazard],
+                color='crimson',
+                opacity=0.9,
+                line=dict(width=0)
+            ),
             text=[a['text'] for a in hazard],
             hoverinfo='text',
             name='Asteroids (hazardous)'
@@ -66,17 +100,21 @@ def create_3d_asteroid_plot(asteroids_data: List[Dict], title: str) -> go.Figure
         [abs(a['y']) for a in asteroids_data] +
         [abs(a['z']) for a in asteroids_data]
     )
-    lim = max(max_dist * 1.2, EARTH_RADIUS_AU * 12)
+
+    lim = max(max_dist * 1.2, r_vis * 6)
 
     fig.update_layout(
         title=title,
         scene=dict(
-            xaxis_title='X (AU)', yaxis_title='Y (AU)', zaxis_title='Z (AU)',
+            xaxis_title='X (AU)',
+            yaxis_title='Y (AU)',
+            zaxis_title='Z (AU)',
             aspectmode='cube',
             xaxis=dict(range=[-lim, lim], showgrid=True, gridcolor="gray", backgroundcolor="black"),
             yaxis=dict(range=[-lim, lim], showgrid=True, gridcolor="gray", backgroundcolor="black"),
             zaxis=dict(range=[-lim, lim], showgrid=True, gridcolor="gray", backgroundcolor="black"),
             bgcolor="black",
+            camera=dict(eye=dict(x=2.2, y=0.0, z=0.5))  # nice initial view
         ),
         height=720,
         margin=dict(l=0, r=0, b=0, t=40),
@@ -85,18 +123,25 @@ def create_3d_asteroid_plot(asteroids_data: List[Dict], title: str) -> go.Figure
         paper_bgcolor="black",
         font=dict(color="white")
     )
+
     return fig
+
 
 def save_spinning_html(
     fig: go.Figure,
     out_path: str = "site/index.html",
     div_id: str = "plotly-div",
+    *,
     spin: bool = True,
     rpm: float = 0.6,
     interval_ms: int = 50,
     camera_radius: float = 2.2,
     camera_z: float = 0.5
 ) -> None:
+    """
+    Save a standalone HTML page and (optionally) auto-rotate the camera for display.
+    Suitable for GitHub Pages (no backend needed).
+    """
     html = fig.to_html(
         include_plotlyjs='cdn',
         full_html=True,
@@ -124,6 +169,7 @@ def save_spinning_html(
   var Z = {camera_z};
   var pausedUntil = 0;
 
+  // Pause auto-rotation briefly if the user manually adjusts the camera
   div.on('plotly_relayout', function() {{
     pausedUntil = Date.now() + 3000;
   }});
@@ -139,7 +185,7 @@ def save_spinning_html(
 """
 
     html = html.replace("</body>", style + spin_js + "</body>")
-    import os
+
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(html)
