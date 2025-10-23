@@ -4,7 +4,7 @@ from typing import List, Dict
 import numpy as np
 import plotly.graph_objects as go
 
-# Units
+
 EARTH_RADIUS_KM = 6371
 KM_PER_AU = 149597870.7
 EARTH_RADIUS_AU = EARTH_RADIUS_KM / KM_PER_AU
@@ -14,39 +14,52 @@ def create_3d_asteroid_plot(
     asteroids_data: List[Dict],
     title: str,
     *,
-    earth_scale: float = 200.0, 
+    earth_min_scale: float = 200.0,    
+    earth_fraction_of_range: float = 0.18,  
     show_earth_label: bool = True
 ) -> go.Figure:
-    """
-    Build a 3D Plotly scene with a solid Earth and asteroid markers.
-    Each asteroid dict should have: x,y,z (AU); size (km); is_hazardous (bool); text (hover)
-    """
     fig = go.Figure()
 
+    # If no data, still show a nice Earth
     if not asteroids_data:
         asteroids_data = []
 
+    # ----------------------------
+    # Determine scene scale from data
+    # ----------------------------
+    if asteroids_data:
+        max_dist = max(
+            [abs(a['x']) for a in asteroids_data] +
+            [abs(a['y']) for a in asteroids_data] +
+            [abs(a['z']) for a in asteroids_data]
+        )
+    else:
+        max_dist = EARTH_RADIUS_AU * earth_min_scale * 4  
+
+    r_vis_from_fraction = max_dist * earth_fraction_of_range
+    r_vis_from_min = EARTH_RADIUS_AU * earth_min_scale
+    r_vis = max(r_vis_from_fraction, r_vis_from_min)
+
+    lim = max(max_dist * 1.15, r_vis * 2.0)
+
     u = np.linspace(0, 2 * np.pi, 160)
     v = np.linspace(0, np.pi, 160)
-
-    r_vis = EARTH_RADIUS_AU * earth_scale
     ex = r_vis * np.outer(np.cos(u), np.sin(v))
     ey = r_vis * np.outer(np.sin(u), np.sin(v))
     ez = r_vis * np.outer(np.ones(u.size), np.cos(v))
 
 
     lat_norm = ez / r_vis
-
     earth_colorscale = [
-        [0.00, "rgb(230,240,250)"],  # light ice
-        [0.05, "rgb(0, 35, 90)"],    # deep ocean
-        [0.20, "rgb(0, 70, 150)"],   # ocean
+        [0.00, "rgb(235,240,250)"],  # light ice
+        [0.06, "rgb(0, 35, 90)"],    # deep ocean
+        [0.22, "rgb(0, 70, 150)"],   # ocean
         [0.40, "rgb(0, 120, 220)"],  # light ocean
         [0.55, "rgb(34, 139, 34)"],  # green land
-        [0.70, "rgb(60, 170, 60)"],  # brighter land
-        [0.85, "rgb(189,183,107)"],  # tan
-        [0.95, "rgb(235,235,235)"],  # snowy
-        [1.00, "rgb(255,255,255)"],  # north pole
+        [0.72, "rgb(60, 170, 60)"],  # brighter land
+        [0.86, "rgb(189,183,107)"],  # tan
+        [0.94, "rgb(235,235,235)"],  # snowy
+        [1.00, "rgb(255,255,255)"],  # polar cap
     ]
 
     fig.add_trace(go.Surface(
@@ -54,31 +67,23 @@ def create_3d_asteroid_plot(
         surfacecolor=lat_norm, cmin=-1, cmax=1,
         colorscale=earth_colorscale,
         showscale=False,
-        opacity=1.0,                        
+        opacity=1.0,                      
         name="Earth",
         hoverinfo="name",
-        lighting=dict(ambient=0.5, diffuse=0.8, specular=0.2, roughness=0.6),
-        lightposition=dict(x=1.5, y=1.5, z=0.8),
+        lighting=dict(ambient=0.5, diffuse=0.85, specular=0.15, roughness=0.6),
+        lightposition=dict(x=1.6, y=1.2, z=0.9),
     ))
 
-    t = np.linspace(0, 2*np.pi, 200)
-    fig.add_trace(go.Scatter3d(
-        x=(r_vis*1.02)*np.cos(t), y=(r_vis*1.02)*np.sin(t), z=np.zeros_like(t),
-        mode='lines', line=dict(width=3, color='white'),
-        name='Equator', hoverinfo='skip', showlegend=False
-    ))
-    fig.add_trace(go.Scatter3d(
-        x=[0], y=[0], z=[0],
-        mode='markers', marker=dict(size=6, color='white'),
-        name='Core', hoverinfo='skip', showlegend=False
-    ))
     if show_earth_label:
         fig.add_trace(go.Scatter3d(
-            x=[0], y=[0], z=[r_vis*1.15],
-            mode='text', text=["🌍 Earth"], textposition="middle center",
-            name="Earth label", hoverinfo="skip", showlegend=False
+            x=[0], y=[0], z=[r_vis * 1.08],
+            mode='text',
+            text=["Earth"],
+            textposition="middle center",
+            name="Earth label",
+            hoverinfo="skip",
+            showlegend=False
         ))
-
     hazard = [a for a in asteroids_data if a.get('is_hazardous')]
     safe   = [a for a in asteroids_data if not a.get('is_hazardous')]
 
@@ -122,18 +127,6 @@ def create_3d_asteroid_plot(
             name='Asteroids (hazardous)'
         ))
 
-    if asteroids_data:
-        max_dist = max(
-            [abs(a['x']) for a in asteroids_data] +
-            [abs(a['y']) for a in asteroids_data] +
-            [abs(a['z']) for a in asteroids_data]
-        )
-    else:
-        max_dist = r_vis * 2
-
- 
-    lim = max(max_dist * 1.15, r_vis * 3.0)
-
     fig.update_layout(
         title=title,
         scene=dict(
@@ -143,7 +136,7 @@ def create_3d_asteroid_plot(
             yaxis=dict(range=[-lim, lim], showgrid=True, gridcolor="gray", backgroundcolor="black", zeroline=False),
             zaxis=dict(range=[-lim, lim], showgrid=True, gridcolor="gray", backgroundcolor="black", zeroline=False),
             bgcolor="black",
-            camera=dict(eye=dict(x=2.6, y=0.8, z=0.8))
+            camera=dict(eye=dict(x=2.3, y=0.9, z=0.9))
         ),
         height=720,
         margin=dict(l=0, r=0, b=0, t=48),
@@ -165,12 +158,8 @@ def save_spinning_html(
     rpm: float = 0.6,
     interval_ms: int = 50,
     camera_radius: float = 2.6,
-    camera_z: float = 0.8
+    camera_z: float = 0.9
 ) -> None:
-    """
-    Save a standalone HTML page and (optionally) auto-rotate the camera.
-    Perfect for GitHub Pages.
-    """
     html = fig.to_html(
         include_plotlyjs='cdn',
         full_html=True,
