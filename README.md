@@ -3,8 +3,6 @@
 > 🌐 **Live Visualization:**  
 > [View the Interactive Demo](https://viepertech.github.io/viper-planet-explorer//)
 
----
-
 ## 🛰️ Overview
 
 This project visualizes **Near-Earth Objects (NEOs)** using live data from NASA’s [NeoWs (Near Earth Object Web Service)](https://api.nasa.gov/).  
@@ -15,8 +13,6 @@ Each asteroid is plotted in **Astronomical Units (AU)**, scaled in size, and col
 - 🟦 **Blue:** Non-hazardous asteroids  
 - 🟥 **Red:** Potentially hazardous asteroids  
 - 🌍 **Green–Blue Earth:** Scaled-up solid Earth sphere at the origin  
-
----
 
 ## How to Run Locally
 
@@ -63,8 +59,6 @@ viper-planet-explorer/
    - Runs the script to fetch new data  
    - Publishes `site/index.html` to **GitHub Pages**
 
----
-
 ## 🧩 Features
 
 ✅ **Solid, opaque Earth** with realistic gradient  
@@ -72,8 +66,6 @@ viper-planet-explorer/
 ✅ **NASA live data refresh** on every workflow run  
 ✅ **Standalone HTML** (no backend needed)  
 ✅ **Fully automated GitHub Pages deployment**
-
----
 
 ## 🧠 Technical Details
 
